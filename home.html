@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currency Converter</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #ffffff; /* Text color */
+            overflow: hidden; /* Hide scrollbars */
+        }
+
+        #video-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 20px;
+            font-size: 36px;
+        }
+
+        p {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        input, select, button {
+            margin: 10px;
+            padding: 15px;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #3498db;
+            color: #ffffff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        #loadingIndicator {
+            color: #ffffff;
+            display: none;
+            font-size: 16px;
+        }
+
+        #convertedAmount {
+            font-weight: bold;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+
+<video id="video-background" autoplay muted loop>
+    <source src="video_curr.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
+
+<h1>Welcome to our Currency Converter</h1>
+
+<p> 
+    Please enter the amount you want to convert and select currencies from the drop-down menus:
+    <input type="number" name="amount" id="amount" placeholder="Enter the value to convert">
+
+    <select name="fromCurrency" id="fromCurrency">
+        <option disabled selected value="">Select currency</option>
+    </select>
+
+    <span>to</span>
+
+    <select name="toCurrency" id="toCurrency">
+        <option disabled selected value="">Select currency</option>
+    </select>
+
+    <button onclick="convertCurrency()">Convert</button>
+    <span id="loadingIndicator">Loading...</span>
+</p>
+
+<p>
+    <strong>Converted Amount:</strong> <span id="convertedAmount"></span>
+</p>
+
+<script>
+    function fetchCurrencies() {
+        const apiKey = 'b6cc9df7b5afccc8ac9b55701c851c8e';
+        const apiUrl = `https://open.er-api.com/v6/latest?access_key=${apiKey}`;
+
+        // Display loading indicator
+        document.getElementById('loadingIndicator').style.display = 'inline';
+
+        fetch(apiUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const fromCurrencyDropdown = document.getElementById('fromCurrency');
+                const toCurrencyDropdown = document.getElementById('toCurrency');
+
+                // Clear existing options
+                fromCurrencyDropdown.innerHTML = '';
+                toCurrencyDropdown.innerHTML = '';
+
+                // Add default options
+                const defaultOption = document.createElement('option');
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                defaultOption.value = '';
+                defaultOption.text = 'Select currency';
+
+                fromCurrencyDropdown.add(defaultOption);
+
+                // Add options for each currency
+                for (const currencyCode in data.rates) {
+                    const fromOption = document.createElement('option');
+                    fromOption.value = currencyCode;
+                    fromOption.text = `${currencyCode} - ${data.rates[currencyCode]}`;
+                    fromCurrencyDropdown.add(fromOption);
+
+                    const toOption = document.createElement('option');
+                    toOption.value = currencyCode;
+                    toOption.text = `${currencyCode} - ${data.rates[currencyCode]}`;
+                    toCurrencyDropdown.add(toOption);
+                }
+
+                // Add default option to the toCurrencyDropdown
+                toCurrencyDropdown.add(defaultOption.cloneNode(true));
+
+                // Hide loading indicator
+                document.getElementById('loadingIndicator').style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Error fetching currencies:', error);
+                // Display error message on the webpage
+                alert('Error fetching currencies. Please try again later.');
+                // Hide loading indicator in case of an error
+                document.getElementById('loadingIndicator').style.display = 'none';
+            });
+    }
+
+    function convertCurrency() {
+        const amountInput = document.getElementById('amount');
+        const fromCurrencyInput = document.getElementById('fromCurrency');
+        const toCurrencyInput = document.getElementById('toCurrency');
+
+        const amount = amountInput.value.trim();
+        if (amount === '' || isNaN(amount)) {
+            alert('Please enter a valid numeric amount to convert.');
+            return;
+        }
+
+        const fromCurrency = fromCurrencyInput.value;
+        const toCurrency = toCurrencyInput.value;
+        if (fromCurrency === '' || toCurrency === '') {
+            alert('Please select both "From" and "To" currencies.');
+            return;
+        }
+
+        const apiKey = 'b6cc9df7b5afccc8ac9b55701c851c8e';
+        const apiUrl = `https://open.er-api.com/v6/latest?access_key=${apiKey}`;
+
+        document.getElementById('loadingIndicator').style.display = 'inline';
+
+        fetch(apiUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const exchangeRate = data.rates[toCurrency] / data.rates[fromCurrency];
+                const convertedAmount = (amount * exchangeRate).toFixed(2);
+                document.getElementById('convertedAmount').innerText = `${amount} ${fromCurrency} = ${convertedAmount} ${toCurrency}`;
+                document.getElementById('loadingIndicator').style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Error converting currency:', error);
+                alert('Error converting currency. Please try again later.');
+                document.getElementById('loadingIndicator').style.display = 'none';
+            });
+    }
+
+    fetchCurrencies();
+</script>
+
+</body>
+</html>
